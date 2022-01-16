@@ -1,2 +1,11 @@
-# node_modules
-node_modules/*
+# ディレクトリを指定する場合
+node_modules/
+.idea/
+
+# ファイルのパターン一致でコンパイルなどで生成したファイルを指定する場合
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
