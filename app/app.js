@@ -50,6 +50,23 @@ app.get('/api/v1/search', (req, res) => {
     db.close();
 });
 
+// DBクエリ実行用の関数
+const run = async (sql, db, res, message) => {
+    // Promiseを返す = resolve()かreject()まで完了を待つ
+    return new Promise((resolve, reject) => {
+        db.run(sql, (err) => {
+            if (err) {
+                // SQL実行失敗 → サーバーエラー
+                res.status(500).send(err);
+                return reject();
+            } else {
+                res.json({ message: message });
+                return resolve();
+            }
+        });
+    });
+}
+
 // POSTメソッド（Create a new user）
 app.post('/api/v1/users', async (req, res) => {
     const db = new sqlite3.Database(dbPath);
@@ -59,25 +76,26 @@ app.post('/api/v1/users', async (req, res) => {
     const profile = req.body.profile ? req.body.profile : "";
     const dataOfBirth = req.body.date_of_birth ? req.body.date_of_birth : "";
 
-    // DBクエリ実行用の関数
-    const run = async (sql) => {
-        // Promiseを返す = resolve()かreject()まで完了を待つ
-        return new Promise((resolve, reject) => {
-            db.run(sql, (err) => {
-                if (err) {
-                    // SQL実行失敗 → サーバーエラー
-                    res.status(500).send(err);
-                    return reject();
-                } else {
-                    res.json({ message: "新規ユーザーを作成しました！" });
-                    return resolve();
-                }
-            });
-        });
-    }
-
     // DBクエリを実行する
-    await run(`INSERT INTO users (name, profile, date_of_birth) VALUES ("${name}", "${profile}", "${dataOfBirth}")`);
+    await run(`INSERT INTO users (name, profile, date_of_birth) VALUES ("${name}", "${profile}", "${dataOfBirth}")`, db, res, "新規ユーザーを作成しました！");
+    db.close();
+});
+
+// Update user data
+app.put('/api/v1/users/:id', async (req, res) => {
+    const db = new sqlite3.Database(dbPath);
+    const id = req.params.id;
+
+    // 現在のユーザー情報を取得する → 更新する値がなければ元の値をそのまま保持する
+    db.get(`SELECT * FROM users WHERE id = ${id}`, async (err, row) => {
+        const name = req.body.name ? req.body.name : row.name;
+        const profile = req.body.profile ? req.body.profile : row.profile;
+        const dataOfBirth = req.body.date_of_birth ? req.body.date_of_birth : row.date_of_birth;
+
+        // DBクエリを実行する
+        await run(`UPDATE users SET name="${name}", profile="${profile}", date_of_birth="${dataOfBirth}" WHERE id=${id}`, db, res, "ユーザー情報を更新しました！");
+    });
+
     db.close();
 });
 
