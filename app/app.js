@@ -50,7 +50,7 @@ app.get('/api/v1/search', (req, res) => {
     db.close();
 });
 
-// DBクエリ実行用の関数
+// DBクエリ実行用の共通関数
 const run = async (sql, db, res, message) => {
     // Promiseを返す = resolve()かreject()まで完了を待つ
     return new Promise((resolve, reject) => {
@@ -96,6 +96,16 @@ app.put('/api/v1/users/:id', async (req, res) => {
         await run(`UPDATE users SET name="${name}", profile="${profile}", date_of_birth="${dataOfBirth}" WHERE id=${id}`, db, res, "ユーザー情報を更新しました！");
     });
 
+    db.close();
+});
+
+// Delete a user
+app.delete('/api/v1/users/:id', async (req, res) => {
+    const db = new sqlite3.Database(dbPath);
+    const id = req.params.id;
+
+    // DBクエリを実行する
+    await run(`DELETE FROM users WHERE id=${id}`, db, res, "ユーザー情報を削除しました！");
     db.close();
 });
 
