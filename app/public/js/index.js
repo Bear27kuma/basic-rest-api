@@ -7,7 +7,7 @@ const indexModule = (() => {
         case '/':
             // 検索ボタンをクリックした時のイベントリスナー設定
             document.getElementById('search-btn').addEventListener('click', () => {
-                return searchModule().searchUsers();
+                return searchModule.searchUsers();
             });
 
             // UsersモジュールのfetchAllUsersメソッドを呼び出す
