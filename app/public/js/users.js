@@ -80,5 +80,24 @@ const usersModule = (() => {
             alert(resJson.message);
             window.location.href = '/';
         },
+
+        // ユーザーを削除する
+        deleteUser: async (uid) => {
+            const confirm = window.confirm('このユーザーを削除しますか？');
+
+            if (!confirm) {
+                return false
+            } else {
+                // メソッドをDELETEにしてfetchメソッドを実行する
+                const res = await fetch(BASE_URL + '/' + uid, {
+                    method: "DELETE",
+                    headers: headers,
+                });
+
+                const resJson = await res.json();
+                alert(resJson.message);
+                window.location.href = '/';
+            }
+        }
     }
 })();
