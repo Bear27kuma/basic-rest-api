@@ -53,7 +53,7 @@ const usersModule = (() => {
 
             // レスポンスが完了したらalertでメッセージを表示する
             alert(resJson.message);
-            window.location.href = "/";
+            window.location.href = '/';
         }
     }
 })();
