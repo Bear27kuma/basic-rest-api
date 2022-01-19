@@ -54,6 +54,31 @@ const usersModule = (() => {
             // レスポンスが完了したらalertでメッセージを表示する
             alert(resJson.message);
             window.location.href = '/';
-        }
+        },
+
+        // フォームの入力値からユーザー情報を編集する
+        saveUser: async (uid) => {
+            const name = document.getElementById('name').value;
+            const profile = document.getElementById('profile').value;
+            const dateOfBirth = document.getElementById('date-of-birth').value;
+
+            const body = {
+                name: name,
+                profile: profile,
+                date_of_birth: dateOfBirth
+            }
+
+            // メソッドをPUTにしてfetchメソッドを実行する
+            const res = await fetch(BASE_URL + '/' + uid, {
+                method: "PUT",
+                headers: headers,
+                body: JSON.stringify(body)
+            });
+
+            const resJson = await res.json();
+
+            alert(resJson.message);
+            window.location.href = '/';
+        },
     }
 })();
