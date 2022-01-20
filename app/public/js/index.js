@@ -26,7 +26,7 @@ const indexModule = (() => {
             const uid = window.location.search.split('?uid=')[1];
 
             document.getElementById('save-btn').addEventListener('click', () => {
-                return usersModule.saveUser();
+                return usersModule.saveUser(uid);
             });
             document.getElementById('cancel-btn').addEventListener('click', () => {
                 return window.location.href = '/';
