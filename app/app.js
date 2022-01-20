@@ -81,7 +81,7 @@ app.post('/api/v1/users', async (req, res) => {
     db.close();
 });
 
-// Update user data
+// PUTメソッド（Update user data）
 app.put('/api/v1/users/:id', async (req, res) => {
     const db = new sqlite3.Database(dbPath);
     const id = req.params.id;
@@ -99,7 +99,7 @@ app.put('/api/v1/users/:id', async (req, res) => {
     db.close();
 });
 
-// Delete a user
+// DELETEメソッド（Delete a user）
 app.delete('/api/v1/users/:id', async (req, res) => {
     const db = new sqlite3.Database(dbPath);
     const id = req.params.id;

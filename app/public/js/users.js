@@ -22,6 +22,7 @@ const usersModule = (() => {
                                 <td>${user.date_of_birth}</td>
                                 <td>${user.created_at}</td>
                                 <td>${user.updated_at}</td>
+                                <td><a href="edit.html?uid=${user.id}">編集</a></td>
                               </tr>`;
 
                 document.getElementById('users-list').insertAdjacentHTML('beforeend', body);
@@ -54,6 +55,61 @@ const usersModule = (() => {
             // レスポンスが完了したらalertでメッセージを表示する
             alert(resJson.message);
             window.location.href = '/';
+        },
+
+        // 既存のユーザー情報をセットする
+        setExistingValue: async (uid) => {
+            const res = await fetch(BASE_URL + '/' + uid);
+            const resJson = await res.json();
+
+            // 各値をinputタグにセットする
+            document.getElementById('name').value = resJson.name;
+            document.getElementById('profile').value = resJson.profile;
+            document.getElementById('date-of-birth').value = resJson.date_of_birth;
+        },
+
+        // フォームの入力値からユーザー情報を編集する
+        saveUser: async (uid) => {
+            const name = document.getElementById('name').value;
+            const profile = document.getElementById('profile').value;
+            const dateOfBirth = document.getElementById('date-of-birth').value;
+
+            const body = {
+                name: name,
+                profile: profile,
+                date_of_birth: dateOfBirth
+            }
+
+            // メソッドをPUTにしてfetchメソッドを実行する
+            const res = await fetch(BASE_URL + '/' + uid, {
+                method: "PUT",
+                headers: headers,
+                body: JSON.stringify(body)
+            });
+
+            const resJson = await res.json();
+
+            alert(resJson.message);
+            window.location.href = '/';
+        },
+
+        // ユーザーを削除する
+        deleteUser: async (uid) => {
+            const confirm = window.confirm('このユーザーを削除しますか？');
+
+            if (!confirm) {
+                return false
+            } else {
+                // メソッドをDELETEにしてfetchメソッドを実行する
+                const res = await fetch(BASE_URL + '/' + uid, {
+                    method: "DELETE",
+                    headers: headers,
+                });
+
+                const resJson = await res.json();
+                alert(resJson.message);
+                window.location.href = '/';
+            }
         }
     }
 })();
