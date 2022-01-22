@@ -8,7 +8,7 @@ const bodyParser = require('body-parser');
 const dbPath = 'app/db/database.sqlite3'
 
 // リクエストのbodyをパースする設定
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 
 // 静的ファイルのルートディレクトリを設定
@@ -130,8 +130,22 @@ app.delete('/api/v1/users/:id', async (req, res) => {
     const db = new sqlite3.Database(dbPath);
     const id = req.params.id;
 
-    // DBクエリを実行する
-    await run(`DELETE FROM users WHERE id=${id}`, db, res, "ユーザー情報を削除しました！");
+    // 現在のユーザー情報を取得する → 削除対象のユーザーがいるかどうか確認する
+    db.get(`SELECT * FROM users WHERE id = ${id}`, async (err, row) => {
+        // idが存在しなかった場合のエラーハンドリング
+        if (!row) {
+            res.status(404).send({error: "指定されたユーザーが見つかりません。"});
+        } else {
+            try {
+                // DBクエリを実行する
+                await run(`DELETE FROM users WHERE id=${id}`, db);
+                res.status(200).send({message: "ユーザーを削除しました。"});
+            } catch (e) {
+                res.status(500).send({error: e});
+            }
+        }
+    });
+
     db.close();
 });
 
