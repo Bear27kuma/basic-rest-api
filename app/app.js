@@ -55,16 +55,13 @@ app.get('/api/v1/search', (req, res) => {
 });
 
 // DBクエリ実行用の共通関数
-const run = async (sql, db, res, message) => {
+const run = async (sql, db) => {
     // Promiseを返す = resolve()かreject()まで完了を待つ
     return new Promise((resolve, reject) => {
         db.run(sql, (err) => {
             if (err) {
-                // SQL実行失敗 → サーバーエラー
-                res.status(500).send(err);
-                return reject();
+                return reject(err);
             } else {
-                res.json({ message: message });
                 return resolve();
             }
         });
@@ -73,16 +70,27 @@ const run = async (sql, db, res, message) => {
 
 // POSTメソッド（Create a new user）
 app.post('/api/v1/users', async (req, res) => {
-    const db = new sqlite3.Database(dbPath);
+    if (!req.body.name || req.body.name === "") {
+        res.status(400).send({error: "ユーザー名が指定されていません。"});
+    } else {
+        const db = new sqlite3.Database(dbPath);
 
-    // bodyの中の各値を取得する
-    const name = req.body.name;
-    const profile = req.body.profile ? req.body.profile : "";
-    const dataOfBirth = req.body.date_of_birth ? req.body.date_of_birth : "";
+        // bodyの中の各値を取得する
+        const name = req.body.name;
+        const profile = req.body.profile ? req.body.profile : "";
+        const dataOfBirth = req.body.date_of_birth ? req.body.date_of_birth : "";
 
-    // DBクエリを実行する
-    await run(`INSERT INTO users (name, profile, date_of_birth) VALUES ("${name}", "${profile}", "${dataOfBirth}")`, db, res, "新規ユーザーを作成しました！");
-    db.close();
+        // 例外処理を実行するための構文
+        try {
+            // DBクエリを実行する
+            await run(`INSERT INTO users (name, profile, date_of_birth) VALUES ("${name}", "${profile}", "${dataOfBirth}")`, db);
+            res.status(201).send({message: "新規ユーザーを作成しました。"})
+        } catch (e) {
+            res.status(500).send({error: e})
+        }
+
+        db.close();
+    }
 });
 
 // PUTメソッド（Update user data）
