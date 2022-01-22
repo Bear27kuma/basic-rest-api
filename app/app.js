@@ -114,7 +114,7 @@ app.put('/api/v1/users/:id', async (req, res) => {
                 try {
                     // DBクエリを実行する
                     await run(`UPDATE users SET name="${name}", profile="${profile}", date_of_birth="${dataOfBirth}" WHERE id=${id}`, db);
-                    res.status(200).send({error: "ユーザー情報を更新しました。"});
+                    res.status(200).send({message: "ユーザー情報を更新しました。"});
                 } catch (e) {
                     res.status(500).send({error: e});
                 }

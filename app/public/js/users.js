@@ -6,6 +6,37 @@ const usersModule = (() => {
     const headers = new Headers();
     headers.set("Content-Type", "application/json");
 
+    const handleError = async (res) => {
+        const resJson = await res.json();
+
+        // レスポンスのステータスによって処理を振り分ける
+        switch (res.status) {
+            case 200:
+                alert(resJson.message);
+                window.location.href = '/';
+                break;
+            case 201:
+                alert(resJson.message);
+                window.location.href = '/';
+                break;
+            case 400:
+                // リクエストのパラメータ間違い
+                alert(resJson.error);
+                break;
+            case 404:
+                // 指定したリソースが見つからない
+                alert(resJson.error);
+                break;
+            case 500:
+                // サーバー内部エラー
+                alert(resJson.error);
+                break;
+            default:
+                alert('何らかのエラーが発生しました。');
+                break;
+        }
+    }
+
     return {
         // ユーザーを全件取得してテーブル列で返す
         fetchAllUsers: async () => {
@@ -50,11 +81,7 @@ const usersModule = (() => {
                 body: JSON.stringify(body)
             });
 
-            const resJson = await res.json();
-
-            // レスポンスが完了したらalertでメッセージを表示する
-            alert(resJson.message);
-            window.location.href = '/';
+            return handleError(res);
         },
 
         // 既存のユーザー情報をセットする
@@ -87,10 +114,7 @@ const usersModule = (() => {
                 body: JSON.stringify(body)
             });
 
-            const resJson = await res.json();
-
-            alert(resJson.message);
-            window.location.href = '/';
+            return handleError(res);
         },
 
         // ユーザーを削除する
@@ -106,9 +130,7 @@ const usersModule = (() => {
                     headers: headers,
                 });
 
-                const resJson = await res.json();
-                alert(resJson.message);
-                window.location.href = '/';
+                return handleError(res);
             }
         }
     }
