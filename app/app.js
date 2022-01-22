@@ -8,7 +8,7 @@ const bodyParser = require('body-parser');
 const dbPath = 'app/db/database.sqlite3'
 
 // リクエストのbodyをパースする設定
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 
 // 静的ファイルのルートディレクトリを設定
@@ -32,7 +32,11 @@ app.get('/api/v1/users/:id', (req, res) => {
     const id = req.params.id;
 
     db.get(`SELECT * FROM users WHERE id = ${id}`, (err, row) => {
-        res.json(row);
+        if (!row) {
+            res.status(404).send({error: "Not Found!"})
+        } else {
+            res.status(200).json(row);
+        }
     });
 
     db.close();
@@ -51,16 +55,13 @@ app.get('/api/v1/search', (req, res) => {
 });
 
 // DBクエリ実行用の共通関数
-const run = async (sql, db, res, message) => {
+const run = async (sql, db) => {
     // Promiseを返す = resolve()かreject()まで完了を待つ
     return new Promise((resolve, reject) => {
         db.run(sql, (err) => {
             if (err) {
-                // SQL実行失敗 → サーバーエラー
-                res.status(500).send(err);
-                return reject();
+                return reject(err);
             } else {
-                res.json({ message: message });
                 return resolve();
             }
         });
@@ -69,34 +70,59 @@ const run = async (sql, db, res, message) => {
 
 // POSTメソッド（Create a new user）
 app.post('/api/v1/users', async (req, res) => {
-    const db = new sqlite3.Database(dbPath);
+    if (!req.body.name || req.body.name === "") {
+        res.status(400).send({error: "ユーザー名が指定されていません。"});
+    } else {
+        const db = new sqlite3.Database(dbPath);
 
-    // bodyの中の各値を取得する
-    const name = req.body.name;
-    const profile = req.body.profile ? req.body.profile : "";
-    const dataOfBirth = req.body.date_of_birth ? req.body.date_of_birth : "";
+        // bodyの中の各値を取得する
+        const name = req.body.name;
+        const profile = req.body.profile ? req.body.profile : "";
+        const dataOfBirth = req.body.date_of_birth ? req.body.date_of_birth : "";
 
-    // DBクエリを実行する
-    await run(`INSERT INTO users (name, profile, date_of_birth) VALUES ("${name}", "${profile}", "${dataOfBirth}")`, db, res, "新規ユーザーを作成しました！");
-    db.close();
+        // 例外処理を実行するための構文
+        try {
+            // DBクエリを実行する
+            await run(`INSERT INTO users (name, profile, date_of_birth) VALUES ("${name}", "${profile}", "${dataOfBirth}")`, db);
+            res.status(201).send({message: "新規ユーザーを作成しました。"})
+        } catch (e) {
+            res.status(500).send({error: e})
+        }
+
+        db.close();
+    }
 });
 
 // PUTメソッド（Update user data）
 app.put('/api/v1/users/:id', async (req, res) => {
-    const db = new sqlite3.Database(dbPath);
-    const id = req.params.id;
+    if (!req.body.name || req.body.name === "") {
+        res.status(400).send({error: "ユーザー名が指定されていません。"});
+    } else {
+        const db = new sqlite3.Database(dbPath);
+        const id = req.params.id;
 
-    // 現在のユーザー情報を取得する → 更新する値がなければ元の値をそのまま保持する
-    db.get(`SELECT * FROM users WHERE id = ${id}`, async (err, row) => {
-        const name = req.body.name ? req.body.name : row.name;
-        const profile = req.body.profile ? req.body.profile : row.profile;
-        const dataOfBirth = req.body.date_of_birth ? req.body.date_of_birth : row.date_of_birth;
+        // 現在のユーザー情報を取得する → 更新する値がなければ元の値をそのまま保持する
+        db.get(`SELECT * FROM users WHERE id = ${id}`, async (err, row) => {
+            // idが存在しなかった場合のエラーハンドリング
+            if (!row) {
+                res.status(404).send({error: "指定されたユーザーが見つかりません。"});
+            } else {
+                const name = req.body.name ? req.body.name : row.name;
+                const profile = req.body.profile ? req.body.profile : row.profile;
+                const dataOfBirth = req.body.date_of_birth ? req.body.date_of_birth : row.date_of_birth;
 
-        // DBクエリを実行する
-        await run(`UPDATE users SET name="${name}", profile="${profile}", date_of_birth="${dataOfBirth}" WHERE id=${id}`, db, res, "ユーザー情報を更新しました！");
-    });
+                try {
+                    // DBクエリを実行する
+                    await run(`UPDATE users SET name="${name}", profile="${profile}", date_of_birth="${dataOfBirth}" WHERE id=${id}`, db);
+                    res.status(200).send({message: "ユーザー情報を更新しました。"});
+                } catch (e) {
+                    res.status(500).send({error: e});
+                }
+            }
+        });
 
-    db.close();
+        db.close();
+    }
 });
 
 // DELETEメソッド（Delete a user）
@@ -104,8 +130,22 @@ app.delete('/api/v1/users/:id', async (req, res) => {
     const db = new sqlite3.Database(dbPath);
     const id = req.params.id;
 
-    // DBクエリを実行する
-    await run(`DELETE FROM users WHERE id=${id}`, db, res, "ユーザー情報を削除しました！");
+    // 現在のユーザー情報を取得する → 削除対象のユーザーがいるかどうか確認する
+    db.get(`SELECT * FROM users WHERE id = ${id}`, async (err, row) => {
+        // idが存在しなかった場合のエラーハンドリング
+        if (!row) {
+            res.status(404).send({error: "指定されたユーザーが見つかりません。"});
+        } else {
+            try {
+                // DBクエリを実行する
+                await run(`DELETE FROM users WHERE id=${id}`, db);
+                res.status(200).send({message: "ユーザーを削除しました。"});
+            } catch (e) {
+                res.status(500).send({error: e});
+            }
+        }
+    });
+
     db.close();
 });
 
