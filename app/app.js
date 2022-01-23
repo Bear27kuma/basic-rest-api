@@ -26,6 +26,38 @@ app.get('/api/v1/users', (req, res) => {
     db.close();
 });
 
+// GETメソッド（Get following users）
+app.get('/api/v1/users/:id/following', (req, res) => {
+    const db = new sqlite3.Database(dbPath);
+    const id = req.params.id;
+
+    db.all(`SELECT * FROM following LEFT JOIN users ON following.followed_id = users.id WHERE following_id = ${id}`, (err, rows) => {
+        if (!rows) {
+            res.status(404).send({error: "Not Found!"});
+        } else {
+            res.status(200).json(rows);
+        }
+    });
+
+    db.close();
+});
+
+// GETメソッド（Get followers）
+app.get('/api/v1/users/:id/followers', (req, res) => {
+    const db = new sqlite3.Database(dbPath);
+    const id = req.params.id;
+
+    db.all(`SELECT * FROM following LEFT JOIN users ON following.following_id = users.id WHERE followed_id = ${id}`, (err, rows) => {
+        if (!rows) {
+            res.status(404).send({error: "Not Found!"});
+        } else {
+            res.status(200).json(rows);
+        }
+    });
+
+    db.close();
+});
+
 // GETメソッド（Get a user）
 app.get('/api/v1/users/:id', (req, res) => {
     const db = new sqlite3.Database(dbPath);
@@ -42,13 +74,51 @@ app.get('/api/v1/users/:id', (req, res) => {
     db.close();
 });
 
+// GETメソッド（Get a following user）
+app.get('/api/v1/users/:id/following/:followed_id', (req, res) => {
+    const db = new sqlite3.Database(dbPath);
+    const following_id = req.params.id;
+    const followed_id = req.params.followed_id;
+
+    db.get(`SELECT * FROM following LEFT JOIN users ON following.followed_id = users.id WHERE following_id = ${following_id} AND followed_id = ${followed_id}`, (err, row) => {
+        if (!row) {
+            res.status(404).send({error: "Not Found!"})
+        } else {
+            res.status(200).json(row);
+        }
+    });
+
+    db.close();
+});
+
+// GETメソッド（Get a following user）
+app.get('/api/v1/users/:id/followers/:following_id', (req, res) => {
+    const db = new sqlite3.Database(dbPath);
+    const followed_id = req.params.id;
+    const following_id = req.params.following_id;
+
+    db.get(`SELECT * FROM following LEFT JOIN users ON following.following_id = users.id WHERE followed_id = ${followed_id} AND following_id = ${following_id}`, (err, row) => {
+        if (!row) {
+            res.status(404).send({error: "Not Found!"})
+        } else {
+            res.status(200).json(row);
+        }
+    });
+
+    db.close();
+});
+
 // GETメソッド（Search users with matching keyword）
 app.get('/api/v1/search', (req, res) => {
     const db = new sqlite3.Database(dbPath);
     const keyword = req.query.q;
 
     db.all(`SELECT * FROM users WHERE name LIKE "%${keyword}%"`, (err, rows) => {
-        res.json(rows);
+        if (!rows) {
+            res.status(404).send({error: "Not Found!"})
+        } else {
+            res.status(200).json(rows);
+        }
     });
 
     db.close();
@@ -86,7 +156,30 @@ app.post('/api/v1/users', async (req, res) => {
             await run(`INSERT INTO users (name, profile, date_of_birth) VALUES ("${name}", "${profile}", "${dataOfBirth}")`, db);
             res.status(201).send({message: "新規ユーザーを作成しました。"})
         } catch (e) {
-            res.status(500).send({error: e})
+            res.status(500).send({error: e});
+        }
+
+        db.close();
+    }
+});
+
+// POSTメソッド（Follow a user）
+app.post('/api/v1/users/:id/following/:followed_id', async (req, res) => {
+    if (!req.params.id || !req.params.followed_id) {
+        res.status(400).send({error: "ユーザー名が指定されていません。"});
+    } else {
+        const db = new sqlite3.Database(dbPath);
+
+        // パラメータのidを取得する
+        const following_id = req.params.id;
+        const followed_id = req.params.followed_id;
+
+        try {
+            // DBクエリを実行する
+            await run(`INSERT INTO following (following_id, followed_id) VALUES ("${following_id}", "${followed_id}")`, db);
+            res.status(201).send({message: `ユーザー${followed_id}をフォローしました。`});
+        } catch (e) {
+            res.status(500).send({error: e});
         }
 
         db.close();
@@ -140,6 +233,31 @@ app.delete('/api/v1/users/:id', async (req, res) => {
                 // DBクエリを実行する
                 await run(`DELETE FROM users WHERE id=${id}`, db);
                 res.status(200).send({message: "ユーザーを削除しました。"});
+            } catch (e) {
+                res.status(500).send({error: e});
+            }
+        }
+    });
+
+    db.close();
+});
+
+// DELETEメソッド（Unfollow a user）
+app.delete('/api/v1/users/:id/following/:followed_id', async (req, res) => {
+    const db = new sqlite3.Database(dbPath);
+    const following_id = req.params.id;
+    const followed_id = req.params.followed_id;
+
+    // 現在のユーザー情報を取得する → 削除対象のユーザーがいるかどうか確認する
+    db.get(`SELECT * FROM following LEFT JOIN users ON following.followed_id = users.id WHERE following_id = ${following_id} AND followed_id = ${followed_id}`, async (err, row) => {
+        // レコードが存在しなかった場合のエラーハンドリング
+        if (!row) {
+            res.status(404).send({error: "指定されたユーザーが見つかりません。"});
+        } else {
+            try {
+                // DBクエリを実行する
+                await run(`DELETE FROM following WHERE following_id = ${following_id} AND followed_id = ${followed_id}`, db);
+                res.status(200).send({message: "フォロー解除しました。"});
             } catch (e) {
                 res.status(500).send({error: e});
             }
