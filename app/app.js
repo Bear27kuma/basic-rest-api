@@ -123,7 +123,30 @@ app.post('/api/v1/users', async (req, res) => {
             await run(`INSERT INTO users (name, profile, date_of_birth) VALUES ("${name}", "${profile}", "${dataOfBirth}")`, db);
             res.status(201).send({message: "新規ユーザーを作成しました。"})
         } catch (e) {
-            res.status(500).send({error: e})
+            res.status(500).send({error: e});
+        }
+
+        db.close();
+    }
+});
+
+// POSTメソッド（Follow a user）
+app.post('/api/v1/users/:id/following/:followed_id', async (req, res) => {
+    if (!req.params.id || !req.params.followed_id) {
+        res.status(400).send({error: "ユーザー名が指定されていません。"});
+    } else {
+        const db = new sqlite3.Database(dbPath);
+
+        // パラメータのidを取得する
+        const following_id = req.params.id;
+        const followed_id = req.params.followed_id;
+
+        try {
+            // DBクエリを実行する
+            await run(`INSERT INTO following (following_id, followed_id) VALUES ("${following_id}", "${followed_id}")`, db);
+            res.status(201).send({message: `ユーザー${followed_id}をフォローしました。`});
+        } catch (e) {
+            res.status(500).send({error: e});
         }
 
         db.close();
