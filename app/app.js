@@ -209,6 +209,31 @@ app.delete('/api/v1/users/:id', async (req, res) => {
     db.close();
 });
 
+// DELETEメソッド（Unfollow a user）
+app.delete('/api/v1/users/:id/following/:followed_id', async (req, res) => {
+    const db = new sqlite3.Database(dbPath);
+    const following_id = req.params.id;
+    const followed_id = req.params.followed_id;
+
+    // 現在のユーザー情報を取得する → 削除対象のユーザーがいるかどうか確認する
+    db.get(`SELECT * FROM following LEFT JOIN users ON following.followed_id = users.id WHERE following_id = ${following_id} AND followed_id = ${followed_id}`, async (err, row) => {
+        // レコードが存在しなかった場合のエラーハンドリング
+        if (!row) {
+            res.status(404).send({error: "指定されたユーザーが見つかりません。"});
+        } else {
+            try {
+                // DBクエリを実行する
+                await run(`DELETE FROM following WHERE following_id = ${following_id} AND followed_id = ${followed_id}`, db);
+                res.status(200).send({message: "フォロー解除しました。"});
+            } catch (e) {
+                res.status(500).send({error: e});
+            }
+        }
+    });
+
+    db.close();
+});
+
 // 環境変数に記述されているポート番号を参照し、なければ3000に設定する
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
