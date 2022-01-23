@@ -91,6 +91,23 @@ app.get('/api/v1/users/:id/following/:followed_id', (req, res) => {
     db.close();
 });
 
+// GETメソッド（Get a following user）
+app.get('/api/v1/users/:id/followers/:following_id', (req, res) => {
+    const db = new sqlite3.Database(dbPath);
+    const followed_id = req.params.id;
+    const following_id = req.params.following_id;
+
+    db.get(`SELECT * FROM following LEFT JOIN users ON following.following_id = users.id WHERE followed_id = ${followed_id} AND following_id = ${following_id}`, (err, row) => {
+        if (!row) {
+            res.status(404).send({error: "Not Found!"})
+        } else {
+            res.status(200).json(row);
+        }
+    });
+
+    db.close();
+});
+
 // GETメソッド（Search users with matching keyword）
 app.get('/api/v1/search', (req, res) => {
     const db = new sqlite3.Database(dbPath);
