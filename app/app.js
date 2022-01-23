@@ -26,6 +26,22 @@ app.get('/api/v1/users', (req, res) => {
     db.close();
 });
 
+// GETメソッド（Get following users）
+app.get('/api/v1/users/:id/following', (req, res) => {
+    const db = new sqlite3.Database(dbPath);
+    const id = req.params.id;
+
+    db.all(`SELECT * FROM following LEFT JOIN users ON following.followed_id = users.id WHERE following_id = ${id}`, (err, rows) => {
+        if (!rows) {
+            res.status(404).send({error: "Not Found!"});
+        } else {
+            res.status(200).json(rows);
+        }
+    });
+
+    db.close();
+});
+
 // GETメソッド（Get a user）
 app.get('/api/v1/users/:id', (req, res) => {
     const db = new sqlite3.Database(dbPath);
